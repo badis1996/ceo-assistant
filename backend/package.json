@@ -8,7 +8,8 @@
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "setup-mongodb": "ts-node src/scripts/setup-mongodb.ts"
+    "setup-mongodb": "ts-node src/scripts/setup-mongodb.ts",
+    "vercel-build": "npm run build"
   },
   "keywords": [],
   "author": "",

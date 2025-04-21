@@ -2,99 +2,171 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import * as API from "./api"
+import { useEffect } from "react"
 
 export interface Task {
   id: string
+  _id?: string  // MongoDB ObjectId
   title: string
   description: string
   date: string // ISO date string
   category: "product" | "sales" | "marketing"
   priority: "low" | "medium" | "high"
   completed: boolean
-  notes: string // New field for notes and lessons learned
+  notes: string
 }
 
 interface TaskStore {
   tasks: Task[]
-  addTask: (task: Omit<Task, "id" | "completed" | "notes">) => void
-  updateTask: (id: string, updates: Partial<Task>) => void
-  deleteTask: (id: string) => void
-  toggleTaskCompletion: (id: string) => void
-  updateTaskNotes: (id: string, notes: string) => void // New function specifically for notes
+  loading: boolean
+  error: string | null
+  fetchTasks: () => Promise<void>
+  addTask: (task: Omit<Task, "id" | "completed" | "notes">) => Promise<void>
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>
+  deleteTask: (id: string) => Promise<void>
+  toggleTaskCompletion: (id: string) => Promise<void>
+  updateTaskNotes: (id: string, notes: string) => Promise<void>
 }
+
+// Helper function to normalize task data from API
+const normalizeTask = (task: any): Task => ({
+  id: task._id || task.id,
+  _id: task._id,
+  title: task.title,
+  description: task.description || "",
+  date: task.date,
+  category: task.category,
+  priority: task.priority,
+  completed: task.completed || false,
+  notes: task.notes || "",
+})
 
 export const useTaskStore = create<TaskStore>()(
   persist(
-    (set) => ({
-      tasks: [
-        // Sample initial tasks
-        {
-          id: "1",
-          title: "Review new feature specifications",
-          description: "Review and approve the specifications for the upcoming feature release.",
-          date: new Date().toISOString(),
-          category: "product",
-          priority: "high",
-          completed: false,
-          notes: "Make sure to check compatibility with existing systems.",
-        },
-        {
-          id: "2",
-          title: "Enterprise client proposal",
-          description: "Finalize the proposal for the enterprise client.",
-          date: new Date().toISOString(),
-          category: "sales",
-          priority: "high",
-          completed: false,
-          notes: "Include case studies from similar clients.",
-        },
-        {
-          id: "3",
-          title: "Content calendar approval",
-          description: "Review and approve the content calendar for the next month.",
-          date: new Date().toISOString(),
-          category: "marketing",
-          priority: "medium",
-          completed: false,
-          notes: "Align with product launch dates.",
-        },
-      ],
+    (set, get) => ({
+      tasks: [],
+      loading: false,
+      error: null,
 
-      addTask: (task) =>
-        set((state) => ({
-          tasks: [
-            ...state.tasks,
-            {
-              ...task,
-              id: crypto.randomUUID(),
-              completed: false,
-              notes: "",
-            },
-          ],
-        })),
+      fetchTasks: async () => {
+        set({ loading: true, error: null })
+        try {
+          const tasksData = await API.fetchTasks()
+          set({ tasks: tasksData.map(normalizeTask), loading: false })
+        } catch (error) {
+          console.error("Failed to fetch tasks:", error)
+          set({ error: "Failed to load tasks", loading: false })
+        }
+      },
 
-      updateTask: (id, updates) =>
-        set((state) => ({
-          tasks: state.tasks.map((task) => (task.id === id ? { ...task, ...updates } : task)),
-        })),
+      addTask: async (task) => {
+        set({ loading: true, error: null })
+        try {
+          const newTask = await API.createTask(task)
+          set((state) => ({
+            tasks: [...state.tasks, normalizeTask(newTask)],
+            loading: false,
+          }))
+        } catch (error) {
+          console.error("Failed to add task:", error)
+          set({ error: "Failed to create task", loading: false })
+        }
+      },
 
-      deleteTask: (id) =>
-        set((state) => ({
-          tasks: state.tasks.filter((task) => task.id !== id),
-        })),
+      updateTask: async (id, updates) => {
+        set({ loading: true, error: null })
+        try {
+          const task = get().tasks.find(t => t.id === id)
+          if (!task) throw new Error("Task not found")
+          
+          const mongoId = task._id || id
+          const updatedTask = await API.updateTask(mongoId, updates)
+          
+          set((state) => ({
+            tasks: state.tasks.map((t) => 
+              t.id === id ? normalizeTask(updatedTask) : t
+            ),
+            loading: false,
+          }))
+        } catch (error) {
+          console.error("Failed to update task:", error)
+          set({ error: "Failed to update task", loading: false })
+        }
+      },
 
-      toggleTaskCompletion: (id) =>
-        set((state) => ({
-          tasks: state.tasks.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)),
-        })),
+      deleteTask: async (id) => {
+        set({ loading: true, error: null })
+        try {
+          const task = get().tasks.find(t => t.id === id)
+          if (!task) throw new Error("Task not found")
+          
+          const mongoId = task._id || id
+          await API.deleteTask(mongoId)
+          
+          set((state) => ({
+            tasks: state.tasks.filter((t) => t.id !== id),
+            loading: false,
+          }))
+        } catch (error) {
+          console.error("Failed to delete task:", error)
+          set({ error: "Failed to delete task", loading: false })
+        }
+      },
 
-      updateTaskNotes: (id, notes) =>
-        set((state) => ({
-          tasks: state.tasks.map((task) => (task.id === id ? { ...task, notes } : task)),
-        })),
+      toggleTaskCompletion: async (id) => {
+        set({ loading: true, error: null })
+        try {
+          const task = get().tasks.find(t => t.id === id)
+          if (!task) throw new Error("Task not found")
+          
+          const mongoId = task._id || id
+          await API.toggleTaskCompletion(mongoId)
+          
+          set((state) => ({
+            tasks: state.tasks.map((t) => 
+              t.id === id ? { ...t, completed: !t.completed } : t
+            ),
+            loading: false,
+          }))
+        } catch (error) {
+          console.error("Failed to toggle task completion:", error)
+          set({ error: "Failed to update task", loading: false })
+        }
+      },
+
+      updateTaskNotes: async (id, notes) => {
+        set({ loading: true, error: null })
+        try {
+          const task = get().tasks.find(t => t.id === id)
+          if (!task) throw new Error("Task not found")
+          
+          const mongoId = task._id || id
+          const updatedTask = await API.updateTask(mongoId, { notes })
+          
+          set((state) => ({
+            tasks: state.tasks.map((t) => 
+              t.id === id ? { ...t, notes } : t
+            ),
+            loading: false,
+          }))
+        } catch (error) {
+          console.error("Failed to update task notes:", error)
+          set({ error: "Failed to update task notes", loading: false })
+        }
+      },
     }),
     {
       name: "ceo-tasks-storage",
-    },
-  ),
+    }
+  )
 )
+
+// Custom hook to fetch tasks on component mount
+export function useFetchTasks() {
+  const fetchTasks = useTaskStore((state) => state.fetchTasks)
+  
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
+}
