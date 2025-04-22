@@ -1,17 +1,16 @@
 // api/linkedin-posts.js
-const app = require('./index');
+const apiHandler = require('./index');
 
-// Export the handler function
+// Serverless handler for /api/linkedin-posts
 module.exports = async (req, res) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
     return res.status(200).end();
   }
-
-  // Forward the request to our Express app
-  return app(req, res);
+  
+  // Set the correct path for routing in the main API handler
+  req.url = req.url === '/' ? '/api/linkedin-posts' : `/api/linkedin-posts${req.url}`;
+  
+  // Forward to main API handler
+  return apiHandler(req, res);
 }; 

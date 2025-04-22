@@ -1,25 +1,17 @@
 // api/tasks.js
-const express = require('express');
-const router = express.Router();
-const app = require('./index');
+const apiHandler = require('./index');
 
-// Get all tasks
-router.get('/', (req, res) => {
-  // Forward the request to your main app
-  app._router.handle(req, res);
-});
-
-// Export the handler function
+// Serverless handler for /api/tasks
 module.exports = async (req, res) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
     return res.status(200).end();
   }
-
-  // Forward the request to our Express app
-  return app(req, res);
+  
+  // Set the correct path for routing in the main API handler
+  // This ensures the request is routed to the /api/tasks endpoint
+  req.url = req.url === '/' ? '/api/tasks' : `/api/tasks${req.url}`;
+  
+  // Forward to main API handler
+  return apiHandler(req, res);
 }; 
