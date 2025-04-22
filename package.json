@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "vercel-build": "pnpm install --no-frozen-lockfile && next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
