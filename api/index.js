@@ -3,13 +3,46 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
-// Adjust path to import from backend
-const taskRoutes = require('../backend/src/routes/taskRoutes');
-const linkedInPostRoutes = require('../backend/src/routes/linkedInPostRoutes');
-const weeklyGoalRoutes = require('../backend/src/routes/weeklyGoalRoutes');
-const dailyGoalRoutes = require('../backend/src/routes/dailyGoalRoutes');
+// Create mongoose models directly here for serverless deployment
+const taskSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  status: { type: String, default: 'pending' },
+  dueDate: { type: Date },
+  createdAt: { type: Date, default: Date.now }
+});
 
-// Create express app
+const linkedInPostSchema = new mongoose.Schema({
+  content: { type: String, required: true },
+  scheduledDate: { type: Date },
+  status: { type: String, default: 'draft' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const weeklyGoalSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  status: { type: String, default: 'pending' },
+  startDate: { type: Date },
+  endDate: { type: Date },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const dailyGoalSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  status: { type: String, default: 'pending' },
+  date: { type: Date },
+  createdAt: { type: Date, default: Date.now }
+});
+
+// Initialize models
+const Task = mongoose.models.Task || mongoose.model('Task', taskSchema);
+const LinkedInPost = mongoose.models.LinkedInPost || mongoose.model('LinkedInPost', linkedInPostSchema);
+const WeeklyGoal = mongoose.models.WeeklyGoal || mongoose.model('WeeklyGoal', weeklyGoalSchema);
+const DailyGoal = mongoose.models.DailyGoal || mongoose.model('DailyGoal', dailyGoalSchema);
+
+// Initialize express
 const app = express();
 
 // Middleware
@@ -17,48 +50,85 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB connection
+// Connect to MongoDB
 let isConnected = false;
 const connectDB = async () => {
-  if (isConnected) {
-    console.log('Already connected to MongoDB');
-    return;
-  }
+  if (isConnected) return;
   
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI);
     isConnected = true;
     console.log('MongoDB connected successfully');
   } catch (err) {
     console.error('MongoDB connection error:', err);
-    return err;
   }
 };
 
-// Define routes
-app.use('/api/tasks', taskRoutes);
-app.use('/api/linkedin-posts', linkedInPostRoutes);
-app.use('/api/weekly-goals', weeklyGoalRoutes);
-app.use('/api/daily-goals', dailyGoalRoutes);
+// Define API routes directly here
+// Tasks API
+app.get('/api/tasks', async (req, res) => {
+  await connectDB();
+  try {
+    const tasks = await Task.find().sort({ createdAt: -1 });
+    res.json(tasks);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+app.post('/api/tasks', async (req, res) => {
+  await connectDB();
+  try {
+    const task = new Task(req.body);
+    await task.save();
+    res.status(201).json(task);
+  } catch (error) {
+    console.error('Error creating task:', error);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+// LinkedIn Posts API
+app.get('/api/linkedin-posts', async (req, res) => {
+  await connectDB();
+  try {
+    const posts = await LinkedInPost.find().sort({ createdAt: -1 });
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching LinkedIn posts:', error);
+    res.status(500).json({ error: 'Failed to fetch LinkedIn posts' });
+  }
+});
+
+// Weekly Goals API
+app.get('/api/weekly-goals', async (req, res) => {
+  await connectDB();
+  try {
+    const goals = await WeeklyGoal.find().sort({ createdAt: -1 });
+    res.json(goals);
+  } catch (error) {
+    console.error('Error fetching weekly goals:', error);
+    res.status(500).json({ error: 'Failed to fetch weekly goals' });
+  }
+});
+
+// Daily Goals API
+app.get('/api/daily-goals', async (req, res) => {
+  await connectDB();
+  try {
+    const goals = await DailyGoal.find().sort({ createdAt: -1 });
+    res.json(goals);
+  } catch (error) {
+    console.error('Error fetching daily goals:', error);
+    res.status(500).json({ error: 'Failed to fetch daily goals' });
+  }
+});
 
 // Root route
 app.get('/', (req, res) => {
-  res.status(200).send('CEO Assistant API is running...');
+  res.send('CEO Assistant API is running...');
 });
 
-// Handler for serverless function
-module.exports = async (req, res) => {
-  // Connect to database before handling the request
-  await connectDB();
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  // Handle the request with our Express app
-  return app(req, res);
-}; 
+// Export the Express API
+module.exports = app; 

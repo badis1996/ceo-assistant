@@ -1,16 +1,17 @@
 // api/daily-goals.js
-const handler = require('./index');
+const app = require('./index');
 
-// Export the handler that will connect to DB and process the request
+// Export the handler function
 module.exports = async (req, res) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT,DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
     return res.status(200).end();
   }
-  
-  // Since we're handling a daily-goals endpoint, modify the URL to match what the main app expects
-  const path = req.url === '/' ? '' : req.url;
-  req.url = `/api/daily-goals${path}`;
-  
-  // Call the main handler
-  return handler(req, res);
+
+  // Forward the request to our Express app
+  return app(req, res);
 }; 

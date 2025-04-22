@@ -1,17 +1,11 @@
 {
   "version": 2,
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "npm run build",
-  "framework": "nextjs",
-  "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/api/tasks", "destination": "/api/tasks" },
-    { "source": "/api/tasks/(.*)", "destination": "/api/tasks" },
-    { "source": "/api/linkedin-posts", "destination": "/api/linkedin-posts" },
-    { "source": "/api/linkedin-posts/(.*)", "destination": "/api/linkedin-posts" },
-    { "source": "/api/weekly-goals", "destination": "/api/weekly-goals" },
-    { "source": "/api/weekly-goals/(.*)", "destination": "/api/weekly-goals" },
-    { "source": "/api/daily-goals", "destination": "/api/daily-goals" },
-    { "source": "/api/daily-goals/(.*)", "destination": "/api/daily-goals" }
+  "builds": [
+    { "src": "app/**", "use": "@vercel/next" },
+    { "src": "api/**/*.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/app/$1" }
   ]
 } 
