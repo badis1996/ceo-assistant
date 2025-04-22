@@ -2,12 +2,13 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ITask extends Document {
   title: string;
-  description: string;
+  description?: string;
   date: Date;
   category: 'product' | 'sales' | 'marketing';
   priority: 'low' | 'medium' | 'high';
   completed: boolean;
   notes: string;
+  userId: string;
 }
 
 const TaskSchema: Schema = new Schema(
@@ -19,7 +20,8 @@ const TaskSchema: Schema = new Schema(
     },
     description: {
       type: String,
-      required: true,
+      required: false,
+      default: '',
       trim: true
     },
     date: {
@@ -45,6 +47,10 @@ const TaskSchema: Schema = new Schema(
       type: String,
       trim: true,
       default: ''
+    },
+    userId: {
+      type: String,
+      required: true
     }
   },
   {

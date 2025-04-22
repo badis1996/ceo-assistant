@@ -9,7 +9,7 @@ export interface Task {
   id: string
   _id?: string  // MongoDB ObjectId
   title: string
-  description: string
+  description?: string
   date: string // ISO date string
   category: "product" | "sales" | "marketing"
   priority: "low" | "medium" | "high"

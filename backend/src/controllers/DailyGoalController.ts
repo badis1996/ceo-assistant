@@ -4,7 +4,17 @@ import DailyGoal from '../models/DailyGoal';
 // Get all daily goals
 export const getDailyGoals = async (req: Request, res: Response): Promise<void> => {
   try {
-    const goals = await DailyGoal.find().sort({ date: -1 });
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
+    // Use strict equality filtering
+    const goals = await DailyGoal.find({ 
+      userId: { $eq: userId } 
+    }).sort({ date: -1 });
+    
     res.status(200).json(goals);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error });
@@ -14,6 +24,12 @@ export const getDailyGoals = async (req: Request, res: Response): Promise<void> 
 // Get daily goals for a specific date
 export const getDailyGoalsByDate = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { date } = req.params;
     const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
@@ -25,7 +41,8 @@ export const getDailyGoalsByDate = async (req: Request, res: Response): Promise<
       date: {
         $gte: startDate,
         $lte: endDate
-      }
+      },
+      userId
     }).sort({ date: 1 });
 
     res.status(200).json(goals);
@@ -37,7 +54,18 @@ export const getDailyGoalsByDate = async (req: Request, res: Response): Promise<
 // Create new daily goal
 export const createDailyGoal = async (req: Request, res: Response): Promise<void> => {
   try {
-    const newGoal = new DailyGoal(req.body);
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
+    const goalData = {
+      ...req.body,
+      userId
+    };
+    
+    const newGoal = new DailyGoal(goalData);
     const savedGoal = await newGoal.save();
     res.status(201).json(savedGoal);
   } catch (error) {
@@ -48,17 +76,26 @@ export const createDailyGoal = async (req: Request, res: Response): Promise<void
 // Update daily goal
 export const updateDailyGoal = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { id } = req.params;
+    
+    // First verify the goal belongs to the user
+    const existingGoal = await DailyGoal.findOne({ _id: id, userId });
+    if (!existingGoal) {
+      res.status(404).json({ message: 'Daily goal not found' });
+      return;
+    }
+    
     const updatedGoal = await DailyGoal.findByIdAndUpdate(
       id,
       { $set: req.body },
       { new: true }
     );
-
-    if (!updatedGoal) {
-      res.status(404).json({ message: 'Daily goal not found' });
-      return;
-    }
 
     res.status(200).json(updatedGoal);
   } catch (error) {
@@ -69,8 +106,16 @@ export const updateDailyGoal = async (req: Request, res: Response): Promise<void
 // Delete daily goal
 export const deleteDailyGoal = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { id } = req.params;
-    const goal = await DailyGoal.findByIdAndDelete(id);
+    
+    // First verify the goal belongs to the user
+    const goal = await DailyGoal.findOneAndDelete({ _id: id, userId });
 
     if (!goal) {
       res.status(404).json({ message: 'Daily goal not found' });
@@ -86,8 +131,14 @@ export const deleteDailyGoal = async (req: Request, res: Response): Promise<void
 // Toggle daily goal completion
 export const toggleDailyGoalCompletion = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { id } = req.params;
-    const goal = await DailyGoal.findById(id);
+    const goal = await DailyGoal.findOne({ _id: id, userId });
 
     if (!goal) {
       res.status(404).json({ message: 'Daily goal not found' });

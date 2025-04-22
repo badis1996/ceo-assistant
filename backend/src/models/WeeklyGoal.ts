@@ -4,6 +4,7 @@ export interface IWeeklyGoal extends Document {
   title: string;
   date: Date;
   completed: boolean;
+  userId: string;
 }
 
 const WeeklyGoalSchema: Schema = new Schema(
@@ -21,6 +22,10 @@ const WeeklyGoalSchema: Schema = new Schema(
     completed: {
       type: Boolean,
       default: false
+    },
+    userId: {
+      type: String,
+      required: true
     }
   },
   {

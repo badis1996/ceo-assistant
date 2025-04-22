@@ -4,8 +4,12 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { LinkedInPosts } from "@/components/linkedin-posts"
 import { CreateLinkedInPostForm } from "@/components/create-linkedin-post-form"
+import { useFetchLinkedInPosts } from "@/lib/linkedin-post-store"
 
 export default function LinkedInPage() {
+  // Fetch LinkedIn posts from API
+  useFetchLinkedInPosts()
+  
   return (
     <DashboardShell>
       <DashboardHeader heading="LinkedIn Posts" text="Create and manage your LinkedIn content calendar." />

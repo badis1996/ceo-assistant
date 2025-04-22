@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { toast } from "@/components/ui/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState } from "react"
 
 const formSchema = z.object({
   title: z
@@ -51,6 +52,7 @@ const formSchema = z.object({
 
 export function CreateTaskForm() {
   const { addTask } = useTaskStore()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,28 +66,40 @@ export function CreateTaskForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    addTask({
-      title: values.title,
-      description: values.description || "",
-      date: values.date.toISOString(),
-      category: values.category,
-      priority: values.priority,
-    })
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true)
+    try {
+      await addTask({
+        title: values.title,
+        description: values.description || "",
+        date: values.date.toISOString(),
+        category: values.category,
+        priority: values.priority,
+      })
 
-    toast({
-      title: "Task created",
-      description: "Your task has been created successfully.",
-    })
+      toast({
+        title: "Task created",
+        description: "Your task has been created successfully.",
+      })
 
-    form.reset({
-      title: "",
-      description: "",
-      date: new Date(),
-      category: "product",
-      priority: "medium",
-      notes: "",
-    })
+      form.reset({
+        title: "",
+        description: "",
+        date: new Date(),
+        category: "product",
+        priority: "medium",
+        notes: "",
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to create task",
+        description: "There was an error creating your task. Please try again.",
+        variant: "destructive",
+      })
+      console.error("Failed to create task:", error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -231,8 +245,15 @@ export function CreateTaskForm() {
               </TabsContent>
             </Tabs>
 
-            <Button type="submit" className="w-full">
-              Create Task
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                  Creating...
+                </>
+              ) : (
+                "Create Task"
+              )}
             </Button>
           </form>
         </Form>

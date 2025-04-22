@@ -35,13 +35,42 @@ export function TasksTable({ tasks }: TasksTableProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [editTask, setEditTask] = useState<string | null>(null)
   const [rescheduleTask, setRescheduleTask] = useState<string | null>(null)
+  const [selectedTask, setSelectedTask] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isCompletingTask, setIsCompletingTask] = useState<string | null>(null)
 
-  const handleDeleteTask = (id: string) => {
-    deleteTask(id)
-    toast({
-      title: "Task deleted",
-      description: "The task has been deleted successfully.",
-    })
+  const handleToggleTaskCompletion = async (id: string) => {
+    setIsCompletingTask(id)
+    try {
+      await toggleTaskCompletion(id)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update the task. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCompletingTask(null)
+    }
+  }
+
+  const handleDeleteTask = async (id: string) => {
+    setIsDeleting(id)
+    try {
+      await deleteTask(id)
+      toast({
+        title: "Task deleted",
+        description: "The task has been deleted successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete the task. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(null)
+    }
   }
 
   const columns: ColumnDef<Task>[] = [
@@ -57,7 +86,8 @@ export function TasksTable({ tasks }: TasksTableProps) {
       cell: ({ row }) => (
         <Checkbox
           checked={row.original.completed}
-          onCheckedChange={() => toggleTaskCompletion(row.original.id)}
+          onCheckedChange={() => handleToggleTaskCompletion(row.original.id)}
+          disabled={isCompletingTask === row.original.id}
           aria-label="Select row"
         />
       ),
@@ -163,8 +193,13 @@ export function TasksTable({ tasks }: TasksTableProps) {
               size="sm"
               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
               onClick={() => handleDeleteTask(task.id)}
+              disabled={isDeleting === task.id}
             >
-              <Trash2 className="h-4 w-4" />
+              {isDeleting === task.id ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
               <span className="sr-only">Delete</span>
             </Button>
           </div>

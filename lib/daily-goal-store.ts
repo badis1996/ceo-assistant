@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware"
 import * as API from './api'
 import { useEffect } from "react"
 
-export interface WeeklyGoal {
+export interface DailyGoal {
   id: string
   _id?: string // MongoDB ID
   title: string
@@ -14,7 +14,7 @@ export interface WeeklyGoal {
 }
 
 // Helper to normalize API response to our store format
-const normalizeGoal = (goal: any): WeeklyGoal => ({
+const normalizeGoal = (goal: any): DailyGoal => ({
   id: goal._id || goal.id,
   _id: goal._id,
   title: goal.title,
@@ -22,18 +22,18 @@ const normalizeGoal = (goal: any): WeeklyGoal => ({
   completed: Boolean(goal.completed),
 })
 
-interface WeeklyGoalStore {
-  goals: WeeklyGoal[]
+interface DailyGoalStore {
+  goals: DailyGoal[]
   loading: boolean
   error: string | null
   fetchGoals: () => Promise<void>
-  addGoal: (goal: Omit<WeeklyGoal, "id" | "completed">) => Promise<void>
-  updateGoal: (id: string, updates: Partial<WeeklyGoal>) => Promise<void>
+  addGoal: (goal: Omit<DailyGoal, "id" | "completed">) => Promise<void>
+  updateGoal: (id: string, updates: Partial<DailyGoal>) => Promise<void>
   deleteGoal: (id: string) => Promise<void>
   toggleGoalCompletion: (id: string) => Promise<void>
 }
 
-export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
+export const useDailyGoalStore = create<DailyGoalStore>()(
   persist(
     (set, get) => ({
       goals: [],
@@ -43,10 +43,10 @@ export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
       fetchGoals: async () => {
         set({ loading: true, error: null })
         try {
-          const goalsData = await API.fetchWeeklyGoals()
+          const goalsData = await API.fetchDailyGoals()
           set({ goals: goalsData.map(normalizeGoal), loading: false })
         } catch (error) {
-          console.error("Failed to fetch weekly goals:", error)
+          console.error("Failed to fetch daily goals:", error)
           set({ error: "Failed to load goals", loading: false })
         }
       },
@@ -54,13 +54,13 @@ export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
       addGoal: async (goal) => {
         set({ loading: true, error: null })
         try {
-          const newGoal = await API.createWeeklyGoal(goal)
+          const newGoal = await API.createDailyGoal(goal)
           set((state) => ({
             goals: [...state.goals, normalizeGoal(newGoal)],
             loading: false,
           }))
         } catch (error) {
-          console.error("Failed to add weekly goal:", error)
+          console.error("Failed to add daily goal:", error)
           set({ error: "Failed to create goal", loading: false })
         }
       },
@@ -72,7 +72,7 @@ export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
           if (!goal) throw new Error("Goal not found")
           
           const mongoId = goal._id || id
-          const updatedGoal = await API.updateWeeklyGoal(mongoId, updates)
+          const updatedGoal = await API.updateDailyGoal(mongoId, updates)
           
           set((state) => ({
             goals: state.goals.map((g) => 
@@ -81,7 +81,7 @@ export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
             loading: false,
           }))
         } catch (error) {
-          console.error("Failed to update weekly goal:", error)
+          console.error("Failed to update daily goal:", error)
           set({ error: "Failed to update goal", loading: false })
         }
       },
@@ -93,14 +93,14 @@ export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
           if (!goal) throw new Error("Goal not found")
           
           const mongoId = goal._id || id
-          await API.deleteWeeklyGoal(mongoId)
+          await API.deleteDailyGoal(mongoId)
           
           set((state) => ({
             goals: state.goals.filter((g) => g.id !== id),
             loading: false,
           }))
         } catch (error) {
-          console.error("Failed to delete weekly goal:", error)
+          console.error("Failed to delete daily goal:", error)
           set({ error: "Failed to delete goal", loading: false })
         }
       },
@@ -112,7 +112,10 @@ export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
           if (!goal) throw new Error("Goal not found")
           
           const mongoId = goal._id || id
-          const updatedGoal = await API.toggleWeeklyGoalCompletion(mongoId)
+          // Using a similar API endpoint as tasks for toggling completion
+          const updatedGoal = await API.updateDailyGoal(mongoId, { 
+            completed: !goal.completed 
+          })
           
           set((state) => ({
             goals: state.goals.map((g) => 
@@ -127,16 +130,16 @@ export const useWeeklyGoalStore = create<WeeklyGoalStore>()(
       },
     }),
     {
-      name: "ceo-weekly-goals-storage",
+      name: "ceo-daily-goals-storage",
     },
   ),
 )
 
 // Custom hook to fetch goals on component mount
-export function useFetchWeeklyGoals() {
-  const fetchGoals = useWeeklyGoalStore((state) => state.fetchGoals)
+export function useFetchDailyGoals() {
+  const fetchGoals = useDailyGoalStore((state) => state.fetchGoals)
   
   useEffect(() => {
     fetchGoals()
   }, [fetchGoals])
-}
+} 

@@ -16,6 +16,7 @@ interface WeeklyGoalsProps {
 export const WeeklyGoals: FC<WeeklyGoalsProps> = ({ selectedDate }) => {
   const { goals, toggleGoalCompletion, deleteGoal } = useWeeklyGoalStore()
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   // Get the start and end of the week for the selected date
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }) // Week starts on Monday
@@ -33,12 +34,35 @@ export const WeeklyGoals: FC<WeeklyGoalsProps> = ({ selectedDate }) => {
     )
   })
 
-  const handleDeleteGoal = (id: string) => {
-    deleteGoal(id)
-    toast({
-      title: "Goal deleted",
-      description: "The weekly goal has been deleted successfully.",
-    })
+  const handleDeleteGoal = async (id: string) => {
+    setIsDeleting(id)
+    try {
+      await deleteGoal(id)
+      toast({
+        title: "Goal deleted",
+        description: "The weekly goal has been deleted successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete the goal. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(null)
+    }
+  }
+
+  const handleToggleCompletion = async (id: string) => {
+    try {
+      await toggleGoalCompletion(id)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update the goal. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -65,7 +89,7 @@ export const WeeklyGoals: FC<WeeklyGoalsProps> = ({ selectedDate }) => {
               key={goal.id}
               className="flex items-center justify-between rounded-lg border border-border bg-card p-4"
             >
-              <div className="flex items-center space-x-3 cursor-pointer" onClick={() => toggleGoalCompletion(goal.id)}>
+              <div className="flex items-center space-x-3 cursor-pointer" onClick={() => handleToggleCompletion(goal.id)}>
                 {goal.completed ? (
                   <CheckCircle2 className="h-6 w-6 text-green-500 dark:text-green-400" />
                 ) : (
@@ -80,8 +104,13 @@ export const WeeklyGoals: FC<WeeklyGoalsProps> = ({ selectedDate }) => {
                 size="sm"
                 className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-400/80 dark:hover:bg-red-400/10"
                 onClick={() => handleDeleteGoal(goal.id)}
+                disabled={isDeleting === goal.id}
               >
-                <Trash2 className="h-5 w-5" />
+                {isDeleting === goal.id ? (
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Trash2 className="h-5 w-5" />
+                )}
                 <span className="sr-only">Delete</span>
               </Button>
             </div>

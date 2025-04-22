@@ -6,6 +6,7 @@ export interface ILinkedInPost extends Document {
   title: string;
   date: Date;
   status: LinkedInPostStatus;
+  userId: string;
 }
 
 const LinkedInPostSchema: Schema = new Schema(
@@ -24,6 +25,10 @@ const LinkedInPostSchema: Schema = new Schema(
       required: true,
       enum: ['scheduled', 'posted', 'open'],
       default: 'scheduled'
+    },
+    userId: {
+      type: String,
+      required: true
     }
   },
   {

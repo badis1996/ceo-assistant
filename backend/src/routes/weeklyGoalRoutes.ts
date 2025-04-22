@@ -7,25 +7,19 @@ import {
   deleteWeeklyGoal,
   toggleWeeklyGoalCompletion
 } from '../controllers/WeeklyGoalController';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
 
-// Get all weekly goals
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
+// Weekly Goal routes
 router.get('/', getWeeklyGoals);
-
-// Get weekly goals for a specific week
 router.get('/date/:date', getWeeklyGoalsByDate);
-
-// Create new weekly goal
 router.post('/', createWeeklyGoal);
-
-// Update weekly goal
 router.put('/:id', updateWeeklyGoal);
-
-// Delete weekly goal
 router.delete('/:id', deleteWeeklyGoal);
-
-// Toggle weekly goal completion
-router.patch('/:id/toggle-completion', toggleWeeklyGoalCompletion);
+router.patch('/:id/toggle', toggleWeeklyGoalCompletion);
 
 export default router; 

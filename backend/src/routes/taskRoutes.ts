@@ -6,10 +6,20 @@ import {
   createTask,
   updateTask,
   deleteTask,
-  toggleTaskCompletion
+  toggleTaskCompletion,
+  debugGetAllTasks,
+  cleanupTasks
 } from '../controllers/TaskController';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
+
+// Debug routes (not protected by auth middleware)
+router.get('/debug/all', debugGetAllTasks);
+router.get('/debug/cleanup', cleanupTasks);
+
+// Apply auth middleware to all regular routes
+router.use(authMiddleware);
 
 // Get all tasks
 router.get('/', getTasks);
@@ -30,6 +40,6 @@ router.put('/:id', updateTask);
 router.delete('/:id', deleteTask);
 
 // Toggle task completion
-router.patch('/:id/toggle-completion', toggleTaskCompletion);
+router.patch('/:id/toggle', toggleTaskCompletion);
 
 export default router; 

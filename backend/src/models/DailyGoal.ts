@@ -4,6 +4,7 @@ export interface IDailyGoal extends Document {
   title: string;
   date: Date;
   completed: boolean;
+  userId: string;
 }
 
 const DailyGoalSchema: Schema = new Schema(
@@ -21,6 +22,10 @@ const DailyGoalSchema: Schema = new Schema(
     completed: {
       type: Boolean,
       default: false
+    },
+    userId: {
+      type: String,
+      required: true
     }
   },
   {

@@ -4,28 +4,20 @@ import {
   getPostsByStatus,
   createPost,
   updatePost,
-  deletePost,
-  updatePostStatus
+  deletePost
 } from '../controllers/LinkedInPostController';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
 
-// Get all posts
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
+// LinkedIn Post routes
 router.get('/', getPosts);
-
-// Get posts by status
 router.get('/status/:status', getPostsByStatus);
-
-// Create new post
 router.post('/', createPost);
-
-// Update post
 router.put('/:id', updatePost);
-
-// Delete post
 router.delete('/:id', deletePost);
-
-// Update post status
-router.patch('/:id/status', updatePostStatus);
 
 export default router; 

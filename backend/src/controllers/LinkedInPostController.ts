@@ -4,7 +4,17 @@ import LinkedInPost, { ILinkedInPost } from '../models/LinkedInPost';
 // Get all LinkedIn posts
 export const getPosts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const posts = await LinkedInPost.find().sort({ date: -1 });
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
+    // Use strict equality filtering
+    const posts = await LinkedInPost.find({ 
+      userId: { $eq: userId } 
+    }).sort({ date: -1 });
+    
     res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error });
@@ -14,8 +24,14 @@ export const getPosts = async (req: Request, res: Response): Promise<void> => {
 // Get posts by status
 export const getPostsByStatus = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { status } = req.params;
-    const posts = await LinkedInPost.find({ status }).sort({ date: -1 });
+    const posts = await LinkedInPost.find({ status, userId }).sort({ date: -1 });
     res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error });
@@ -25,7 +41,18 @@ export const getPostsByStatus = async (req: Request, res: Response): Promise<voi
 // Create new LinkedIn post
 export const createPost = async (req: Request, res: Response): Promise<void> => {
   try {
-    const newPost = new LinkedInPost(req.body);
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
+    const postData = {
+      ...req.body,
+      userId
+    };
+    
+    const newPost = new LinkedInPost(postData);
     const savedPost = await newPost.save();
     res.status(201).json(savedPost);
   } catch (error) {
@@ -36,17 +63,26 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
 // Update LinkedIn post
 export const updatePost = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { id } = req.params;
+    
+    // First verify the post belongs to the user
+    const existingPost = await LinkedInPost.findOne({ _id: id, userId });
+    if (!existingPost) {
+      res.status(404).json({ message: 'LinkedIn post not found' });
+      return;
+    }
+    
     const updatedPost = await LinkedInPost.findByIdAndUpdate(
       id,
       { $set: req.body },
       { new: true }
     );
-
-    if (!updatedPost) {
-      res.status(404).json({ message: 'LinkedIn post not found' });
-      return;
-    }
 
     res.status(200).json(updatedPost);
   } catch (error) {
@@ -57,8 +93,16 @@ export const updatePost = async (req: Request, res: Response): Promise<void> => 
 // Delete LinkedIn post
 export const deletePost = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { id } = req.params;
-    const post = await LinkedInPost.findByIdAndDelete(id);
+    
+    // First verify the post belongs to the user
+    const post = await LinkedInPost.findOneAndDelete({ _id: id, userId });
 
     if (!post) {
       res.status(404).json({ message: 'LinkedIn post not found' });
@@ -74,6 +118,12 @@ export const deletePost = async (req: Request, res: Response): Promise<void> => 
 // Update LinkedIn post status
 export const updatePostStatus = async (req: Request, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.uid;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    
     const { id } = req.params;
     const { status } = req.body;
 
@@ -82,7 +132,7 @@ export const updatePostStatus = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const post = await LinkedInPost.findById(id);
+    const post = await LinkedInPost.findOne({ _id: id, userId });
 
     if (!post) {
       res.status(404).json({ message: 'LinkedIn post not found' });

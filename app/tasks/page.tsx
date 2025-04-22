@@ -6,10 +6,14 @@ import { DashboardShell } from "@/components/dashboard-shell"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TasksTable } from "@/components/tasks-table"
 import { CreateTaskForm } from "@/components/create-task-form"
-import { useTaskStore } from "@/lib/task-store"
+import { useTaskStore, useFetchTasks } from "@/lib/task-store"
 
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState("all")
+  
+  // Fetch tasks from API
+  useFetchTasks()
+  
   const { tasks } = useTaskStore()
 
   const filteredTasks = activeTab === "all" ? tasks : tasks.filter((task) => task.category === activeTab)

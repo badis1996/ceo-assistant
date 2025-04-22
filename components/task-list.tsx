@@ -25,6 +25,8 @@ export const TaskList: FC<TaskListProps> = ({ category, selectedDate, limit }) =
   // State for the dialogs
   const [rescheduleTask, setRescheduleTask] = useState<string | null>(null)
   const [editTask, setEditTask] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isCompletingTask, setIsCompletingTask] = useState<string | null>(null)
 
   // Filter tasks for the selected date and category
   const filteredTasks = tasks
@@ -77,12 +79,38 @@ export const TaskList: FC<TaskListProps> = ({ category, selectedDate, limit }) =
     }
   }
 
-  const handleDeleteTask = (id: string) => {
-    deleteTask(id)
-    toast({
-      title: "Task deleted",
-      description: "The task has been deleted successfully.",
-    })
+  const handleDeleteTask = async (id: string) => {
+    setIsDeleting(id)
+    try {
+      await deleteTask(id)
+      toast({
+        title: "Task deleted",
+        description: "The task has been deleted successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete the task. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(null)
+    }
+  }
+
+  const handleToggleTaskCompletion = async (id: string) => {
+    setIsCompletingTask(id)
+    try {
+      await toggleTaskCompletion(id)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update the task. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCompletingTask(null)
+    }
   }
 
   const categoryColor = getCategoryColor(category)
@@ -102,7 +130,8 @@ export const TaskList: FC<TaskListProps> = ({ category, selectedDate, limit }) =
             <Checkbox
               id={task.id}
               checked={task.completed}
-              onCheckedChange={() => toggleTaskCompletion(task.id)}
+              onCheckedChange={() => handleToggleTaskCompletion(task.id)}
+              disabled={isCompletingTask === task.id}
               className={task.completed ? "border-green-500 text-green-500 mt-1" : "mt-1"}
             />
             <div className="flex-1">
@@ -137,8 +166,13 @@ export const TaskList: FC<TaskListProps> = ({ category, selectedDate, limit }) =
                     size="sm"
                     className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                     onClick={() => handleDeleteTask(task.id)}
+                    disabled={isDeleting === task.id}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {isDeleting === task.id ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                     <span className="sr-only">Delete</span>
                   </Button>
                 </div>

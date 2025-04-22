@@ -12,9 +12,10 @@ import { SystemTime } from "@/components/system-time"
 import { StatsCard } from "@/components/stats-card"
 import Link from "next/link"
 import { Calendar, CheckCircle, Users, Linkedin, ListTodo } from "lucide-react"
-import { useTaskStore } from "@/lib/task-store"
-import { useLinkedInPostStore } from "@/lib/linkedin-post-store" 
-import { useWeeklyGoalStore } from "@/lib/weekly-goal-store"
+import { useTaskStore, useFetchTasks } from "@/lib/task-store"
+import { useLinkedInPostStore, useFetchLinkedInPosts } from "@/lib/linkedin-post-store"
+import { useWeeklyGoalStore, useFetchWeeklyGoals } from "@/lib/weekly-goal-store"
+import { useDailyGoalStore, useFetchDailyGoals } from "@/lib/daily-goal-store"
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -23,9 +24,22 @@ export default function DashboardPage() {
   const [postCount, setPostCount] = useState<number>(0)
   const [goalCount, setGoalCount] = useState<number>(0)
   
+  // Fetch data from API
+  useFetchTasks()
+  useFetchLinkedInPosts()
+  useFetchWeeklyGoals()
+  useFetchDailyGoals()
+  
   const tasks = useTaskStore(state => state.tasks)
+  const tasksLoading = useTaskStore(state => state.loading)
   const posts = useLinkedInPostStore(state => state.posts)
+  const postsLoading = useLinkedInPostStore(state => state.loading)
   const goals = useWeeklyGoalStore(state => state.goals)
+  const goalsLoading = useWeeklyGoalStore(state => state.loading)
+  const dailyGoals = useDailyGoalStore(state => state.goals)
+  const dailyGoalsLoading = useDailyGoalStore(state => state.loading)
+  
+  const isLoading = tasksLoading || postsLoading || goalsLoading || dailyGoalsLoading
 
   // Handle date changes from the schedule card
   const handleDateChange = (date: Date) => {
@@ -62,6 +76,16 @@ export default function DashboardPage() {
           <SystemTime />
         </div>
       </div>
+
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="flex justify-center items-center p-8 mb-6 bg-background border border-border rounded-lg">
+          <div className="flex flex-col items-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-2"></div>
+            <p className="text-sm text-muted-foreground">Loading your dashboard data...</p>
+          </div>
+        </div>
+      )}
 
       {/* Stats Overview */}
       <div className="dashboard-section mb-6">
