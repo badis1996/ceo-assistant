@@ -66,18 +66,6 @@ CEO-Assistant/
    - Choose "Connect your application" and copy the connection string
    - Replace `your_mongodb_connection_string` with this URL, updating username and password
 
-2. Create a `.env.local` file in the root directory with:
-   ```
-   NEXT_PUBLIC_API_URL=http://localhost:5000/api
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
-   ```
-
-   You'll need to create a Firebase project at [Firebase Console](https://console.firebase.google.com/) and enable authentication to get these values.
 
 ## Running the Application
 
