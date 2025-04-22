@@ -9,7 +9,7 @@ const linkedInPostRoutes = require('../backend/src/routes/linkedInPostRoutes');
 const weeklyGoalRoutes = require('../backend/src/routes/weeklyGoalRoutes');
 const dailyGoalRoutes = require('../backend/src/routes/dailyGoalRoutes');
 
-// Initialize express
+// Create express app
 const app = express();
 
 // Middleware
@@ -17,22 +17,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
+// MongoDB connection
+let isConnected = false;
 const connectDB = async () => {
+  if (isConnected) {
+    console.log('Already connected to MongoDB');
+    return;
+  }
+  
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
+    isConnected = true;
     console.log('MongoDB connected successfully');
   } catch (err) {
     console.error('MongoDB connection error:', err);
-    process.exit(1);
+    return err;
   }
 };
-
-// Connect to the database
-connectDB();
 
 // Define routes
 app.use('/api/tasks', taskRoutes);
@@ -42,8 +46,19 @@ app.use('/api/daily-goals', dailyGoalRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-  res.send('CEO Assistant API is running...');
+  res.status(200).send('CEO Assistant API is running...');
 });
 
-// Export the Express API
-module.exports = app; 
+// Handler for serverless function
+module.exports = async (req, res) => {
+  // Connect to database before handling the request
+  await connectDB();
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  // Handle the request with our Express app
+  return app(req, res);
+}; 

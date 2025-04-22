@@ -5,13 +5,13 @@
   "framework": "nextjs",
   "outputDirectory": "dist",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
+    { "source": "/api/tasks", "destination": "/api/tasks" },
+    { "source": "/api/tasks/(.*)", "destination": "/api/tasks" },
+    { "source": "/api/linkedin-posts", "destination": "/api/linkedin-posts" },
+    { "source": "/api/linkedin-posts/(.*)", "destination": "/api/linkedin-posts" },
+    { "source": "/api/weekly-goals", "destination": "/api/weekly-goals" },
+    { "source": "/api/weekly-goals/(.*)", "destination": "/api/weekly-goals" },
+    { "source": "/api/daily-goals", "destination": "/api/daily-goals" },
+    { "source": "/api/daily-goals/(.*)", "destination": "/api/daily-goals" }
   ]
 } 
