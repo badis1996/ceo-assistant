@@ -57,7 +57,7 @@ const setupMongoDBAtlas = async () => {
     }
 
     // Update the config with the new MongoDB URI
-    envConfig.MONGO_URI = mongoUri;
+    envConfig.MONGODB_URI = mongoUri;
 
     // Write the updated config back to the .env file
     const envContent = Object.entries(envConfig)

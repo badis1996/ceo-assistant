@@ -39,6 +39,7 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@tanstack/react-table": "^8.21.3",
     "autoprefixer": "^10.4.20",
+    "aws4": "^1.13.2",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -73,7 +74,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.13",
-    "@types/express": "^4.17.17",
+    "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "22.14.1",
     "@types/react": "^19",

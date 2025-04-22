@@ -49,9 +49,16 @@ export default function DashboardPage() {
   useEffect(() => {
     // Count tasks for today
     const today = new Date().toISOString().split('T')[0]
-    const todaysTasks = tasks.filter(task => 
-      task.date.split('T')[0] === today && !task.completed
-    )
+    const todaysTasks = tasks.filter(task => {
+      if (!task.date) return false; // Skip tasks without dates
+      
+      try {
+        return task.date.split('T')[0] === today && !task.completed;
+      } catch (error) {
+        console.error("Error processing task date:", task);
+        return false;
+      }
+    });
     setTaskCount(todaysTasks.length)
     
     // Count meetings (assuming tasks with category="sales" are meetings for this example)

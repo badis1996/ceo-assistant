@@ -24,14 +24,24 @@ export const WeeklyGoals: FC<WeeklyGoalsProps> = ({ selectedDate }) => {
 
   // Filter goals for the selected week
   const filteredGoals = goals.filter((goal) => {
-    const goalDate = parseISO(goal.date)
-    return (
-      isWithinInterval(goalDate, { start: weekStart, end: weekEnd }) ||
-      isWithinInterval(selectedDate, {
-        start: startOfWeek(goalDate, { weekStartsOn: 1 }),
-        end: endOfWeek(goalDate, { weekStartsOn: 1 }),
-      })
-    )
+    // Handle case where date is undefined by using current date as fallback
+    if (!goal.date) {
+      return true; // Include goals without dates in the current week view
+    }
+    
+    try {
+      const goalDate = parseISO(goal.date);
+      return (
+        isWithinInterval(goalDate, { start: weekStart, end: weekEnd }) ||
+        isWithinInterval(selectedDate, {
+          start: startOfWeek(goalDate, { weekStartsOn: 1 }),
+          end: endOfWeek(goalDate, { weekStartsOn: 1 }),
+        })
+      );
+    } catch (error) {
+      console.error("Error parsing date for goal:", goal);
+      return true; // Include goals with invalid dates in the current week view
+    }
   })
 
   const handleDeleteGoal = async (id: string) => {

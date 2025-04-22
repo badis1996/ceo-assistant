@@ -12,7 +12,6 @@ const nextConfig = {
   distDir: 'dist',
   trailingSlash: true,
   reactStrictMode: true,
-  swcMinify: true,
   async rewrites() {
     return [
       {
@@ -20,12 +19,6 @@ const nextConfig = {
         destination: '/api/:path*',
       }
     ];
-  }
-}
-
-if (process.env.NODE_ENV === 'development') {
-  nextConfig.server = {
-    port: 5000,
   }
 }
 
