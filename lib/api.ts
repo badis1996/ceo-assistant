@@ -2,8 +2,10 @@ import { auth } from './firebase';
 
 // API base URL configuration
 // In development, it points to localhost
-// In production, it will use the deployed backend URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// In production, it will use relative URLs (same domain)
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // milliseconds
 
