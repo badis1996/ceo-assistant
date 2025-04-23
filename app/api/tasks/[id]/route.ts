@@ -7,9 +7,16 @@ import * as TaskController from '@/backend/src/controllers/TaskController';
 import '@/backend/src/models/Task';
 
 // Connect to MongoDB before handling any request
-const withDB = async (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => {
-  await connectDB();
-  return handler;
+const withDB = (handler: (req: NextRequest, context: any) => Promise<NextResponse>) => {
+  return async (req: NextRequest, context: any) => {
+    try {
+      await connectDB();
+      return handler(req, context);
+    } catch (error) {
+      console.error('Database connection error:', error);
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+  };
 };
 
 // Adapt controllers

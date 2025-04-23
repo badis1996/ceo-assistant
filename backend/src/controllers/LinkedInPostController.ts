@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import LinkedInPost, { ILinkedInPost } from '../models/LinkedInPost';
+import mongoose from 'mongoose';
 
 // Get all LinkedIn posts
 export const getPosts = async (req: Request, res: Response): Promise<void> => {
@@ -101,17 +102,33 @@ export const deletePost = async (req: Request, res: Response): Promise<void> => 
     
     const { id } = req.params;
     
-    // First verify the post belongs to the user
-    const post = await LinkedInPost.findOneAndDelete({ _id: id, userId });
-
-    if (!post) {
-      res.status(404).json({ message: 'LinkedIn post not found' });
+    if (!id) {
+      res.status(400).json({ message: 'Post ID is required' });
       return;
     }
 
+    // First verify the post exists and belongs to the user
+    const post = await LinkedInPost.findOne({ _id: id, userId });
+    
+    if (!post) {
+      res.status(404).json({ message: 'LinkedIn post not found or you do not have permission to delete it' });
+      return;
+    }
+
+    // Now delete the post
+    await LinkedInPost.deleteOne({ _id: id, userId });
+
     res.status(200).json({ message: 'LinkedIn post deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error deleting LinkedIn post:', error);
+    if (error instanceof mongoose.Error.CastError) {
+      res.status(400).json({ message: 'Invalid post ID format' });
+    } else {
+      res.status(500).json({ 
+        message: 'Server Error', 
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+      });
+    }
   }
 };
 

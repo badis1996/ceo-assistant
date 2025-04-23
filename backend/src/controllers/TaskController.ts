@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Task, { ITask } from '../models/Task';
+import mongoose from 'mongoose';
 
 // Get all tasks (with user filtering)
 export const getTasks = async (req: Request, res: Response): Promise<void> => {
@@ -29,9 +30,12 @@ export const getTasks = async (req: Request, res: Response): Promise<void> => {
     }
     
     res.status(200).json(tasks);
-  } catch (error) {
-    console.error('TaskController.getTasks - Error:', error);
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error getting tasks:', error);
+    res.status(500).json({ 
+      message: 'Server Error', 
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+    });
   }
 };
 
@@ -191,17 +195,31 @@ export const deleteTask = async (req: Request, res: Response): Promise<void> => 
     }
     
     const { id } = req.params;
-    // First verify the task belongs to the user
-    const task = await Task.findOneAndDelete({ _id: id, userId });
-
-    if (!task) {
-      res.status(404).json({ message: 'Task not found' });
+    if (!id) {
+      res.status(400).json({ message: 'Task ID is required' });
       return;
     }
 
+    // First verify the task exists and belongs to the user
+    const task = await Task.findOne({ _id: id, userId });
+    if (!task) {
+      res.status(404).json({ message: 'Task not found or you do not have permission to delete it' });
+      return;
+    }
+
+    // Now delete the task
+    await Task.deleteOne({ _id: id, userId });
     res.status(200).json({ message: 'Task deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error deleting task:', error);
+    if (error instanceof mongoose.Error.CastError) {
+      res.status(400).json({ message: 'Invalid task ID format' });
+    } else {
+      res.status(500).json({ 
+        message: 'Server Error', 
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+      });
+    }
   }
 };
 

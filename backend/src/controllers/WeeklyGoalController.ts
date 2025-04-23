@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import WeeklyGoal from '../models/WeeklyGoal';
 import { startOfWeek, endOfWeek } from 'date-fns';
+import mongoose from 'mongoose';
 
 // Get all weekly goals
 export const getWeeklyGoals = async (req: Request, res: Response): Promise<void> => {
@@ -11,14 +12,17 @@ export const getWeeklyGoals = async (req: Request, res: Response): Promise<void>
       return;
     }
     
-    // Use strict equality filtering
     const goals = await WeeklyGoal.find({ 
       userId: { $eq: userId } 
     }).sort({ date: -1 });
     
     res.status(200).json(goals);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error getting weekly goals:', error);
+    res.status(500).json({ 
+      message: 'Server Error', 
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+    });
   }
 };
 
@@ -32,9 +36,18 @@ export const getWeeklyGoalsByDate = async (req: Request, res: Response): Promise
     }
     
     const { date } = req.params;
+    if (!date) {
+      res.status(400).json({ message: 'Date parameter is required' });
+      return;
+    }
+
     const targetDate = new Date(date);
+    if (isNaN(targetDate.getTime())) {
+      res.status(400).json({ message: 'Invalid date format' });
+      return;
+    }
     
-    const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 }); // Week starts on Monday
+    const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 });
 
     const goals = await WeeklyGoal.find({
@@ -46,8 +59,12 @@ export const getWeeklyGoalsByDate = async (req: Request, res: Response): Promise
     }).sort({ date: 1 });
 
     res.status(200).json(goals);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error getting weekly goals by date:', error);
+    res.status(500).json({ 
+      message: 'Server Error', 
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+    });
   }
 };
 
@@ -113,18 +130,31 @@ export const deleteWeeklyGoal = async (req: Request, res: Response): Promise<voi
     }
     
     const { id } = req.params;
-    
-    // First verify the goal belongs to the user
-    const goal = await WeeklyGoal.findOneAndDelete({ _id: id, userId });
-
-    if (!goal) {
-      res.status(404).json({ message: 'Weekly goal not found' });
+    if (!id) {
+      res.status(400).json({ message: 'Goal ID is required' });
       return;
     }
 
+    // First verify the goal exists and belongs to the user
+    const goal = await WeeklyGoal.findOne({ _id: id, userId });
+    if (!goal) {
+      res.status(404).json({ message: 'Weekly goal not found or you do not have permission to delete it' });
+      return;
+    }
+
+    // Now delete the goal
+    await WeeklyGoal.deleteOne({ _id: id, userId });
     res.status(200).json({ message: 'Weekly goal deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error deleting weekly goal:', error);
+    if (error instanceof mongoose.Error.CastError) {
+      res.status(400).json({ message: 'Invalid goal ID format' });
+    } else {
+      res.status(500).json({ 
+        message: 'Server Error', 
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+      });
+    }
   }
 };
 

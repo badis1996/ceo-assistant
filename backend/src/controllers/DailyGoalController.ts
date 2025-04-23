@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import DailyGoal from '../models/DailyGoal';
+import mongoose from 'mongoose';
 
 // Get all daily goals
 export const getDailyGoals = async (req: Request, res: Response): Promise<void> => {
@@ -10,14 +11,17 @@ export const getDailyGoals = async (req: Request, res: Response): Promise<void> 
       return;
     }
     
-    // Use strict equality filtering
     const goals = await DailyGoal.find({ 
       userId: { $eq: userId } 
     }).sort({ date: -1 });
     
     res.status(200).json(goals);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error getting daily goals:', error);
+    res.status(500).json({ 
+      message: 'Server Error', 
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+    });
   }
 };
 
@@ -31,9 +35,18 @@ export const getDailyGoalsByDate = async (req: Request, res: Response): Promise<
     }
     
     const { date } = req.params;
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
+    if (!date) {
+      res.status(400).json({ message: 'Date parameter is required' });
+      return;
+    }
 
+    const startDate = new Date(date);
+    if (isNaN(startDate.getTime())) {
+      res.status(400).json({ message: 'Invalid date format' });
+      return;
+    }
+
+    startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
 
@@ -46,8 +59,12 @@ export const getDailyGoalsByDate = async (req: Request, res: Response): Promise<
     }).sort({ date: 1 });
 
     res.status(200).json(goals);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error getting daily goals by date:', error);
+    res.status(500).json({ 
+      message: 'Server Error', 
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+    });
   }
 };
 
@@ -113,18 +130,31 @@ export const deleteDailyGoal = async (req: Request, res: Response): Promise<void
     }
     
     const { id } = req.params;
-    
-    // First verify the goal belongs to the user
-    const goal = await DailyGoal.findOneAndDelete({ _id: id, userId });
-
-    if (!goal) {
-      res.status(404).json({ message: 'Daily goal not found' });
+    if (!id) {
+      res.status(400).json({ message: 'Goal ID is required' });
       return;
     }
 
+    // First verify the goal exists and belongs to the user
+    const goal = await DailyGoal.findOne({ _id: id, userId });
+    if (!goal) {
+      res.status(404).json({ message: 'Daily goal not found or you do not have permission to delete it' });
+      return;
+    }
+
+    // Now delete the goal
+    await DailyGoal.deleteOne({ _id: id, userId });
     res.status(200).json({ message: 'Daily goal deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+  } catch (error: unknown) {
+    console.error('Error deleting daily goal:', error);
+    if (error instanceof mongoose.Error.CastError) {
+      res.status(400).json({ message: 'Invalid goal ID format' });
+    } else {
+      res.status(500).json({ 
+        message: 'Server Error', 
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Internal server error' 
+      });
+    }
   }
 };
 

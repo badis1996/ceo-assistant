@@ -9,9 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  distDir: 'dist',
   trailingSlash: true,
   reactStrictMode: true,
+  output: 'standalone',
   async rewrites() {
     return [
       {
